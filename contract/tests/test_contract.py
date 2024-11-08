@@ -1744,6 +1744,26 @@ class TestContract(TestContractBase):
             len(invoice_lines),
         )
 
+    def test_cron_recurring_create_invoice_several_partners(self):
+        self.acct_line.date_start = "2018-01-01"
+        self.acct_line.recurring_invoicing_type = "post-paid"
+        self.acct_line.date_end = "2018-03-15"
+        other_partner = self.env.ref('base.res_partner_1')
+        contracts = self.contract2
+        contracts |= self.contract.copy({'partner_id': other_partner.id})
+        self.env["contract.contract"].cron_recurring_create_invoice()
+        invoice_lines = self.env["account.move.line"].search(
+            [("contract_line_id", "in", contracts.mapped("contract_line_ids").ids)]
+        )
+        self.assertEqual(
+            len(contracts.mapped("contract_line_ids")),
+            len(invoice_lines),
+        )
+        self.assertEqual(len(invoice_lines.mapped('move_id')), 2)
+        self.assertEqual(len(invoice_lines.mapped('move_id.partner_id')), 2)
+        self.assertIn(
+            other_partner, invoice_lines.mapped('move_id.partner_id'))
+
     def test_recurring_create_invoice(self):
         self.acct_line.date_start = "2024-01-01"
         self.acct_line.recurring_invoicing_type = "pre-paid"
