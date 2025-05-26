@@ -195,6 +195,25 @@ class ContractContract(models.Model):
                     )
                 modification_ids_not_sent.write({"sent": True})
 
+    @api.depends(
+        "date_start",
+        "date_end",
+        "recurring_interval",
+        "recurring_rule_type",
+        "recurring_invoicing_type",
+        "contract_line_fixed_ids",
+    )
+    def _compute_recurrency_fields(self):
+        for contract in self:
+            for line in contract.contract_line_fixed_ids:
+                line.date_start = contract.date_start
+                line.date_end = contract.date_end
+                line.recurring_interval = contract.recurring_interval
+                line.recurring_rule_type = contract.recurring_rule_type
+                line.recurring_invoicing_type = (
+                    contract.recurring_invoicing_type
+                )
+
     def _compute_access_url(self):
         for record in self:
             record.access_url = "/my/contracts/{}".format(record.id)
